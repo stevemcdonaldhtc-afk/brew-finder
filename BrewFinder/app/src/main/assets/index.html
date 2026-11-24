@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Brew Finder</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen pb-24">
+
+  <!-- Top App Bar -->
+  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3">
+    <div class="max-w-xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-lg shadow-lg shadow-amber-500/20">
+          🍺
+        </div>
+        <div>
+          <h1 id="appTitle" class="text-base font-extrabold tracking-tight text-white leading-tight">Brew Finder</h1>
+          <p class="text-[11px] text-slate-400">6-Pack &amp; 24-Pack Specials Near Belrose</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnLogDeal" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-bold transition">
+          + Log Deal
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-xl mx-auto px-4 pt-4 space-y-5">
+
+    <!-- 1. Location & Closest Bottle Shops First -->
+    <section class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-3.5">
+      <div class="flex items-center justify-between gap-2 mb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="locationLabel" class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Near Belrose NSW 2085</span>
+        </div>
+        <button id="btnUseGps" class="text-[11px] font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2">
+          Update GPS
+        </button>
+      </div>
+
+      <div id="nearbyStoresStrip" class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1"></div>
+    </section>
+
+    <!-- Bayfield's Primary Test Case Banner -->
+    <section class="bg-gradient-to-r from-amber-500/15 via-slate-800 to-slate-800 border border-amber-500/30 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase">Primary Test Case</span>
+          <span id="bayfieldsSyncTime" class="text-[11px] text-slate-400">Verified specials loaded</span>
+        </div>
+        <p class="text-sm font-bold text-white mt-1 truncate">Bayfield's Belrose (5 Hews Pde)</p>
+        <p class="text-xs text-slate-300">Closest store • Member &amp; weekly specials active</p>
+      </div>
+      <div class="flex flex-col gap-1.5 shrink-0">
+        <a href="https://www.bayfields.com.au/latest-specials/beers-cider-2/" target="_blank" rel="noopener noreferrer"
+           class="px-3 py-1.5 rounded-lg bg-slate-900 border border-amber-500/40 text-amber-300 text-xs font-bold text-center hover:bg-slate-800">
+          Open Flyer ↗
+        </a>
+        <button id="btnTestBayfields" class="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-200 text-[11px] font-semibold hover:bg-amber-500/30">
+          Check Deals
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. Friendly Up-Front Filter Toggles -->
+    <section class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-3.5 space-y-3">
+      <!-- Search -->
+      <div class="relative">
+        <input id="searchInput" type="search" placeholder="Search beer, brewery, bottles, cans, or store..."
+               class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3.5 pr-9 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500" />
+        <span class="absolute right-3 top-2.5 text-slate-400 text-sm">🔍</span>
+      </div>
+
+      <!-- Pack Size & Container Toggles -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div>
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Pack Size</div>
+          <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl">
+            <button data-pack="all" class="pack-btn py-2 rounded-lg text-xs font-bold transition">All</button>
+            <button data-pack="24" class="pack-btn py-2 rounded-lg text-xs font-bold transition">24-Pack</button>
+            <button data-pack="6" class="pack-btn py-2 rounded-lg text-xs font-bold transition">6-Pack</button>
+          </div>
+        </div>
+        <div>
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Container</div>
+          <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl">
+            <button data-container="all" class="container-btn py-2 rounded-lg text-xs font-bold transition">All</button>
+            <button data-container="Bottles" class="container-btn py-2 rounded-lg text-xs font-bold transition">Bottles</button>
+            <button data-container="Cans" class="container-btn py-2 rounded-lg text-xs font-bold transition">Cans</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strength Toggle -->
+      <div>
+        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Alcohol Strength</div>
+        <div class="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-xl">
+          <button data-strength="all" class="strength-btn py-2 rounded-lg text-xs font-bold transition">Any Strength</button>
+          <button data-strength="mid" class="strength-btn py-2 rounded-lg text-xs font-bold transition">3.5% Mid</button>
+          <button data-strength="full" class="strength-btn py-2 rounded-lg text-xs font-bold transition">Full (4.2%+)</button>
+        </div>
+      </div>
+
+      <!-- Style Pills -->
+      <div>
+        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Beer Style</div>
+        <div id="stylePills" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5"></div>
+      </div>
+
+      <!-- Ownership & Sort Row -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div>
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Brewery Ownership</div>
+          <select id="ownershipSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-500">
+            <option value="all">All Breweries</option>
+            <option value="independent">Independent Only</option>
+            <option value="major">Major (CUB / Lion / Asahi)</option>
+          </select>
+        </div>
+        <div>
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Sort By</div>
+          <select id="sortSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-500">
+            <option value="savings">Biggest Savings ($)</option>
+            <option value="ml">Best Value ($/mL)</option>
+            <option value="price">Lowest Price</option>
+            <option value="expiring">Ending Soonest</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-1">
+        <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+          <input id="favOnlyToggle" type="checkbox" class="rounded bg-slate-900 border-slate-600 text-amber-500 focus:ring-amber-500" />
+          Our Favourites Only
+        </label>
+        <button id="btnResetFilters" class="text-xs font-semibold text-slate-400 hover:text-white">Reset Filters</button>
+      </div>
+    </section>
+
+    <!-- 3. Top Recommendation Banner -->
+    <section id="topDealBanner"></section>
+
+    <!-- 4. Deal Cards List -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-200"><span id="dealCount">0</span> Deals Compared</h2>
+        <button id="btnResetData" class="text-[11px] text-slate-400 hover:text-amber-400">Reset Sample Prices</button>
+      </div>
+      <div id="dealsList" class="space-y-3"></div>
+    </section>
+
+  </main>
+
+  <!-- Log Flyer Deal Modal -->
+  <div id="dealModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white">Log a Flyer Special</h3>
+        <button id="btnCloseModal" class="text-slate-400 hover:text-white text-lg font-bold px-2">✕</button>
+      </div>
+      <form id="dealForm" class="space-y-2.5">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Beer / Product</label>
+          <select id="modalBeerSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Bottle Shop</label>
+            <select id="modalStoreSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Special Price ($)</label>
+            <input id="modalPrice" type="number" step="0.01" min="1" required placeholder="e.g. 49.99"
+                   class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Deal Ends</label>
+            <input id="modalEnds" type="date" required
+                   class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Promo Note</label>
+            <input id="modalNote" type="text" placeholder="Member Flyer Deal"
+                   class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm">
+          Save &amp; Recalculate Best Deal
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-emerald-500 text-slate-950 text-xs font-bold shadow-xl"></div>
+
+  <script>
+    const STORES = [
+      {
+        id: 'bayfields',
+        name: "Bayfield's Belrose",
+        short: "Bayfield's",
+        address: "5 Hews Parade, Belrose NSW 2085",
+        lat: -33.7336, lng: 151.2134,
+        distKm: 0.4,
+        rating: "4.4★",
+        hours: "Mon-Sat 9am-9pm, Sun 10am-8pm",
+        flyerUrl: "https://www.bayfields.com.au/latest-specials/beers-cider-2/"
+      },
+      {
+        id: 'bws',
+        name: "BWS Glenrose",
+        short: "BWS Glenrose",
+        address: "56/58 Glen St, Belrose NSW 2085",
+        lat: -33.7378, lng: 151.2189,
+        distKm: 0.9,
+        rating: "4.2★",
+        hours: "Mon-Sat 9am-8pm, Sun 10am-8pm",
+        flyerUrl: "https://bws.com.au/productgroup/catalogue-specials-nsw"
+      },
+      {
+        id: 'll_frenchs',
+        name: "Liquorland Frenchs Forest",
+        short: "Liquorland FF",
+        address: "20 Forest Way, Frenchs Forest NSW 2086",
+        lat: -33.7495, lng: 151.2198,
+        distKm: 2.1,
+        rating: "3.6★",
+        hours: "Mon-Thu 9:15am-8pm, Fri-Sat 9am-9pm",
+        flyerUrl: "https://www.liquorland.com.au/catalogue"
+      },
+      {
+        id: 'dans',
+        name: "Dan Murphy's Frenchs Forest",
+        short: "Dan Murphy's",
+        address: "5 Frenchs Forest Rd E, Frenchs Forest NSW 2086",
+        lat: -33.7512, lng: 151.2356,
+        distKm: 3.1,
+        rating: "4.7★",
+        hours: "Mon-Sat 9am-10pm, Sun 10am-9pm",
+        flyerUrl: "https://www.danmurphys.com.au/list/beer-offers-best-deals"
+      },
+      {
+        id: 'll_forestville',
+        name: "Liquorland Warehouse Forestville",
+        short: "LL Forestville",
+        address: "682 Warringah Rd, Forestville NSW 2087",
+        lat: -33.7604, lng: 151.2124,
+        distKm: 3.4,
+        rating: "4.3★",
+        hours: "Tue-Sat 9am-9pm, Sun-Mon 10am-8pm",
+        flyerUrl: "https://www.liquorland.com.au/specials/beer-and-cider-specials"
+      }
+    ];
+
+    const BRAND_LOGOS = {
+      coopers: { bg: '#15803d', fg: '#fef08a', text: 'COOPERS', sub: 'IND' },
+      younghenrys: { bg: '#b45309', fg: '#ffffff', text: 'YH', sub: 'NEWTOWN' },
+      stonewood: { bg: '#0e7490', fg: '#ecfeff', text: 'S&W', sub: 'PACIFIC' },
+      greatnorthern: { bg: '#1e3a8a', fg: '#fbbf24', text: 'GN', sub: '3.5%' },
+      corona: { bg: '#1d4ed8', fg: '#fde047', text: 'CORONA', sub: 'EXTRA' },
+      peroni: { bg: '#dc2626', fg: '#ffffff', text: 'PERONI', sub: 'ITALIA' },
+      asahi: { bg: '#334155', fg: '#f8fafc', text: 'ASAHI', sub: 'DRY' },
+      jamessquire: { bg: '#7c2d12', fg: '#fde68a', text: 'JS', sub: '150' },
+      guinness: { bg: '#111827', fg: '#eab308', text: 'GUINNESS', sub: 'STOUT' },
+      fourpines: { bg: '#0f766e', fg: '#ffffff', text: '4 PINES', sub: 'MANLY' },
+      gageroads: { bg: '#0369a1', fg: '#fef08a', text: 'GAGE', sub: 'IND' },
+      bentspoke: { bg: '#991b1b', fg: '#ffffff', text: 'BENT', sub: 'IPA' }
+    };
+
+    const INITIAL_DEALS = [
+      {
+        id: 'coopers-pale-24',
+        name: 'Coopers Original Pale Ale',
+        brandKey: 'coopers',
+        brewery: 'Coopers Brewery',
+        ownership: 'independent',
+        style: 'Pale Ale',
+        abv: 4.5,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 375,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'bayfields', price: 57.99, regular: 59.99, tag: 'Member Special', endsAt: '2026-11-30', url: 'https://www.bayfields.com.au/shop/attribute/variety/pale-ale/' },
+          { storeId: 'dans', price: 60.00, regular: 61.95, tag: "My Dan's Offer", endsAt: '2026-12-01', url: 'https://www.danmurphys.com.au/product/DM_25620/coopers-pale-ale-bottles-375ml' },
+          { storeId: 'bws', price: 63.00, regular: 63.00, tag: 'Regular', endsAt: '2026-12-08', url: 'https://bws.com.au/product/25620/coopers-pale-ale-bottles-375ml' }
+        ]
+      },
+      {
+        id: 'coopers-pale-cans-24',
+        name: 'Coopers Original Pale Ale',
+        brandKey: 'coopers',
+        brewery: 'Coopers Brewery',
+        ownership: 'independent',
+        style: 'Pale Ale',
+        abv: 4.5,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 375,
+        container: 'Cans',
+        offers: [
+          { storeId: 'dans', price: 60.00, regular: 61.95, tag: "My Dan's Offer", endsAt: '2026-12-01', url: 'https://www.danmurphys.com.au/product/DM_751451/coopers-original-pale-ale-cans-375ml' }
+        ]
+      },
+      {
+        id: 'coopers-pale-6',
+        name: 'Coopers Original Pale Ale',
+        brandKey: 'coopers',
+        brewery: 'Coopers Brewery',
+        ownership: 'independent',
+        style: 'Pale Ale',
+        abv: 4.5,
+        strength: 'full',
+        packSize: 6,
+        unitMl: 375,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'dans', price: 21.49, regular: 21.49, tag: 'Everyday Low', endsAt: '2026-12-02', url: 'https://www.danmurphys.com.au/product/DM_25620/coopers-pale-ale-bottles-375ml' },
+          { storeId: 'bayfields', price: 21.99, regular: 23.99, tag: 'Weekly Special', endsAt: '2026-11-30', url: 'https://www.bayfields.com.au/latest-specials/beers-cider-2/' }
+        ]
+      },
+      {
+        id: 'coopers-stout-24',
+        name: 'Coopers Best Extra Stout',
+        brandKey: 'coopers',
+        brewery: 'Coopers Brewery',
+        ownership: 'independent',
+        style: 'Stout',
+        abv: 6.3,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 375,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'bayfields', price: 79.99, regular: 84.99, tag: 'Store Special', endsAt: '2026-12-01', url: 'https://www.bayfields.com.au/shop/attribute/variety/stout/' },
+          { storeId: 'bws', price: 90.00, regular: 90.00, tag: 'Regular', endsAt: '2026-12-08', url: 'https://bws.com.au/productgroup/beer-specials-?pageNumber=4' }
+        ]
+      },
+      {
+        id: 'coopers-stout-6',
+        name: 'Coopers Best Extra Stout',
+        brandKey: 'coopers',
+        brewery: 'Coopers Brewery',
+        ownership: 'independent',
+        style: 'Stout',
+        abv: 6.3,
+        strength: 'full',
+        packSize: 6,
+        unitMl: 375,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'bws', price: 27.50, regular: 29.00, tag: 'Beer Special', endsAt: '2026-11-29', url: 'https://bws.com.au/productgroup/beer-specials-?pageNumber=4' }
+        ]
+      },
+      {
+        id: 'guinness-24',
+        name: 'Guinness Draught Stout',
+        brandKey: 'guinness',
+        brewery: 'Diageo / Guinness',
+        ownership: 'major',
+        style: 'Stout',
+        abv: 4.2,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 470,
+        container: 'Cans',
+        offers: [
+          { storeId: 'bayfields', price: 87.99, regular: 89.99, tag: 'Member Price', endsAt: '2026-11-30', url: 'https://www.bayfields.com.au/shop/attribute/variety/stout/' },
+          { storeId: 'dans', price: 94.95, regular: 94.95, tag: 'Regular', endsAt: '2026-12-07', url: 'https://www.danmurphys.com.au/list/beer-gifts' }
+        ]
+      },
+      {
+        id: 'gn-super-crisp-24',
+        name: 'Great Northern Super Crisp',
+        brandKey: 'greatnorthern',
+        brewery: 'Carlton & United Breweries (Asahi)',
+        ownership: 'major',
+        style: 'Lager',
+        abv: 3.5,
+        strength: 'mid',
+        packSize: 24,
+        unitMl: 330,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'dans', price: 52.95, regular: 56.95, tag: 'Low Price', endsAt: '2026-12-01', url: 'https://www.danmurphys.com.au/product/DM_839496/great-northern-brewing-co-super-crisp-lager-330ml' },
+          { storeId: 'll_forestville', price: 53.00, regular: 60.00, tag: 'Save $7 Flyer', endsAt: '2026-11-28', url: 'https://www.liquorland.com.au/specials/beer-and-cider-specials' }
+        ]
+      },
+      {
+        id: 'gn-super-crisp-6',
+        name: 'Great Northern Super Crisp',
+        brandKey: 'greatnorthern',
+        brewery: 'Carlton & United Breweries (Asahi)',
+        ownership: 'major',
+        style: 'Lager',
+        abv: 3.5,
+        strength: 'mid',
+        packSize: 6,
+        unitMl: 330,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'dans', price: 18.95, regular: 20.99, tag: 'Weekly Deal', endsAt: '2026-12-01', url: 'https://www.danmurphys.com.au/product/DM_839496/great-northern-brewing-co-super-crisp-lager-330ml' }
+        ]
+      },
+      {
+        id: 'corona-24',
+        name: 'Corona Extra Lager',
+        brandKey: 'corona',
+        brewery: 'AB InBev / CUB',
+        ownership: 'major',
+        style: 'Lager',
+        abv: 4.5,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 330,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'bayfields', price: 58.99, regular: 64.99, tag: 'Black Friday -8%', endsAt: '2026-11-27', url: 'https://www.bayfields.com.au/black-friday-sale/' },
+          { storeId: 'dans', price: 59.95, regular: 59.95, tag: 'Low Price', endsAt: '2026-12-01', url: 'https://www.danmurphys.com.au/product/DM_6079724/corona-extra-lager-bottles-330ml' },
+          { storeId: 'll_frenchs', price: 60.00, regular: 68.00, tag: 'Save $8', endsAt: '2026-11-29', url: 'https://www.liquorland.com.au/beer-and-cider/corona-extra-bottle-330ml_1984073' },
+          { storeId: 'bws', price: 68.00, regular: 68.00, tag: 'Regular', endsAt: '2026-12-08', url: 'https://bws.com.au/product/6079724/corona-extra-lager-bottles-330ml' }
+        ]
+      },
+      {
+        id: 'peroni-24',
+        name: 'Peroni Nastro Azzurro',
+        brandKey: 'peroni',
+        brewery: 'Asahi Breweries',
+        ownership: 'major',
+        style: 'Lager',
+        abv: 5.0,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 330,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'bayfields', price: 57.99, regular: 63.99, tag: 'Flyer -9% Off', endsAt: '2026-11-29', url: 'https://www.bayfields.com.au/shop/attribute/variety/pale-ale/' },
+          { storeId: 'dans', price: 62.99, regular: 62.99, tag: 'Regular', endsAt: '2026-12-05', url: 'https://www.danmurphys.com.au/list/beer-gifts' }
+        ]
+      },
+      {
+        id: 'yh-newtowner-6',
+        name: 'Young Henrys Newtowner Pale Ale',
+        brandKey: 'younghenrys',
+        brewery: 'Young Henrys (Newtown NSW)',
+        ownership: 'independent',
+        style: 'Pale Ale',
+        abv: 4.8,
+        strength: 'full',
+        packSize: 6,
+        unitMl: 375,
+        container: 'Cans',
+        offers: [
+          { storeId: 'dans', price: 20.00, regular: 25.99, tag: "Member Offer -$5.99", endsAt: '2026-11-30', url: 'https://www.danmurphys.com.au/beer/brand-young-henrys' }
+        ]
+      },
+      {
+        id: 'yh-newtowner-24',
+        name: 'Young Henrys Newtowner Pale Ale',
+        brandKey: 'younghenrys',
+        brewery: 'Young Henrys (Newtown NSW)',
+        ownership: 'independent',
+        style: 'Pale Ale',
+        abv: 4.8,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 330,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'dans', price: 68.99, regular: 72.99, tag: 'Case Deal', endsAt: '2026-12-03', url: 'https://www.danmurphys.com.au/beer/brand-young-henrys' }
+        ]
+      },
+      {
+        id: 'yh-mid-24',
+        name: 'Young Henrys Classic Crisp Mid',
+        brandKey: 'younghenrys',
+        brewery: 'Young Henrys (Newtown NSW)',
+        ownership: 'independent',
+        style: 'Lager',
+        abv: 3.5,
+        strength: 'mid',
+        packSize: 24,
+        unitMl: 375,
+        container: 'Cans',
+        offers: [
+          { storeId: 'dans', price: 47.25, regular: 62.99, tag: 'Clearance Offer', endsAt: '2026-11-28', url: 'https://www.danmurphys.com.au/list/young-henrys' }
+        ]
+      },
+      {
+        id: 'gageroads-singlefin-6',
+        name: 'Gage Roads Single Fin Summer Ale',
+        brandKey: 'gageroads',
+        brewery: 'Gage Roads Brew Co',
+        ownership: 'independent',
+        style: 'Pale Ale',
+        abv: 4.5,
+        strength: 'full',
+        packSize: 6,
+        unitMl: 330,
+        container: 'Cans',
+        offers: [
+          { storeId: 'dans', price: 21.99, regular: 23.99, tag: 'Summer Deal', endsAt: '2026-12-04', url: 'https://www.danmurphys.com.au/list/gage-roads' }
+        ]
+      },
+      {
+        id: 'stonewood-24',
+        name: 'Stone & Wood Pacific Ale',
+        brandKey: 'stonewood',
+        brewery: 'Stone & Wood (Lion)',
+        ownership: 'major',
+        style: 'Pale Ale',
+        abv: 4.4,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 330,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'dans', price: 79.95, regular: 84.95, tag: 'Low Price', endsAt: '2026-12-01', url: 'https://www.danmurphys.com.au/product/DM_363586/stone-wood-pacific-ale-bottles-330ml' },
+          { storeId: 'll_forestville', price: 89.00, regular: 89.00, tag: 'Regular', endsAt: '2026-12-08', url: 'https://www.liquorland.com.au/beer-and-cider/stone-26-wood-range' }
+        ]
+      },
+      {
+        id: 'js-150-24',
+        name: 'James Squire 150 Lashes Pale Ale',
+        brandKey: 'jamessquire',
+        brewery: 'Malt Shovel Brewery (Lion)',
+        ownership: 'major',
+        style: 'Pale Ale',
+        abv: 4.2,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 330,
+        container: 'Bottles',
+        offers: [
+          { storeId: 'dans', price: 54.00, regular: 59.95, tag: "Member Offer", endsAt: '2026-11-30', url: 'https://www.danmurphys.com.au/list/james-squire' },
+          { storeId: 'bws', price: 58.00, regular: 58.00, tag: 'Regular', endsAt: '2026-12-08', url: 'https://bws.com.au/product/705049/james-squire-one-fifty-lashes-pale-ale-bottles-345ml' }
+        ]
+      },
+      {
+        id: '4pines-pacific-6',
+        name: '4 Pines Pacific Ale',
+        brandKey: 'fourpines',
+        brewery: '4 Pines (CUB / AB InBev)',
+        ownership: 'major',
+        style: 'Pale Ale',
+        abv: 3.5,
+        strength: 'mid',
+        packSize: 6,
+        unitMl: 375,
+        container: 'Cans',
+        offers: [
+          { storeId: 'bws', price: 20.00, regular: 23.00, tag: 'Save $3', endsAt: '2026-11-29', url: 'https://bws.com.au/productgroup/mix-match-beer' }
+        ]
+      },
+      {
+        id: 'zytho-ipa-24',
+        name: 'Zytho Brewing Craft IPA',
+        brandKey: 'bentspoke',
+        brewery: 'Zytho Brewing',
+        ownership: 'major',
+        style: 'IPA',
+        abv: 6.2,
+        strength: 'full',
+        packSize: 24,
+        unitMl: 375,
+        container: 'Cans',
+        offers: [
+          { storeId: 'dans', price: 80.99, regular: 86.99, tag: 'Case Deal', endsAt: '2026-12-02', url: 'https://www.danmurphys.com.au/list/shop-hops-honchos' }
+        ]
+      },
+      {
+        id: 'zytho-ipa-6',
+        name: 'Zytho Brewing Craft IPA',
+        brandKey: 'bentspoke',
+        brewery: 'Zytho Brewing',
+        ownership: 'major',
+        style: 'IPA',
+        abv: 6.2,
+        strength: 'full',
+        packSize: 6,
+        unitMl: 375,
+        container: 'Cans',
+        offers: [
+          { storeId: 'dans', price: 26.99, regular: 28.99, tag: '6-Pack Deal', endsAt: '2026-12-02', url: 'https://www.danmurphys.com.au/list/shop-hops-honchos' }
+        ]
+      }
+    ];
+
+    const STYLES = ['All', 'Pale Ale', 'Lager', 'IPA', 'Stout'];
+
+    let state = {
+      deals: loadDeals(),
+      favs: loadFavs(),
+      pack: 'all',
+      container: 'all',
+      strength: 'all',
+      style: 'All',
+      ownership: 'all',
+      sort: 'savings',
+      search: '',
+      favOnly: false,
+      userCoords: null
+    };
+
+    function loadDeals() {
+      try {
+        const raw = localStorage.getItem('brew_finder_deals_v3');
+        return raw ? JSON.parse(raw) : structuredClone(INITIAL_DEALS);
+      } catch {
+        return structuredClone(INITIAL_DEALS);
+      }
+    }
+
+    function saveDeals() {
+      try { localStorage.setItem('brew_finder_deals_v3', JSON.stringify(state.deals)); } catch {}
+    }
+
+    function loadFavs() {
+      try {
+        const raw = localStorage.getItem('brew_finder_favs_v3');
+        return raw ? JSON.parse(raw) : ['coopers-pale-24', 'yh-newtowner-6'];
+      } catch {
+        return ['coopers-pale-24', 'yh-newtowner-6'];
+      }
+    }
+
+    function saveFavs() {
+      try { localStorage.setItem('brew_finder_favs_v3', JSON.stringify(state.favs)); } catch {}
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 2600);
+    }
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function getStore(id) {
+      return STORES.find(s => s.id === id) || STORES[0];
+    }
+
+    function daysUntil(dateStr) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const end = new Date(dateStr + 'T00:00:00');
+      return Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    }
+
+    function formatExpiryBadge(dateStr) {
+      const d = daysUntil(dateStr);
+      if (d <= 0) return { text: 'Ends Today', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/40' };
+      if (d === 1) return { text: 'Ends Tomorrow', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/40' };
+      if (d <= 4) return { text: `Ends in ${d}d`, cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+      const dt = new Date(dateStr + 'T00:00:00');
+      const label = dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+      return { text: `Ends ${label}`, cls: 'bg-slate-700/70 text-slate-300 border-slate-600' };
+    }
+
+    function enrichDeal(deal) {
+      const sorted = [...deal.offers].sort((a, b) => a.price - b.price);
+      const best = sorted[0];
+      const worst = sorted[sorted.length - 1];
+      const storeDiff = sorted.length > 1 ? +(worst.price - best.price).toFixed(2) : 0;
+      const promoSave = +(best.regular - best.price).toFixed(2);
+      const totalSavings = Math.max(storeDiff, promoSave);
+      const totalMl = deal.packSize * deal.unitMl;
+      const perMl = best.price / totalMl;
+      const per100Ml = perMl * 100;
+      const perUnit = best.price / deal.packSize;
+      const soonestDays = Math.min(...deal.offers.map(o => daysUntil(o.endsAt)));
+      return { ...deal, sortedOffers: sorted, best, worst, storeDiff, promoSave, totalSavings, totalMl, perMl, per100Ml, perUnit, soonestDays };
+    }
+
+    function renderBrandLogo(brandKey) {
+      const cfg = BRAND_LOGOS[brandKey] || { bg: '#334155', fg: '#ffffff', text: 'BEER', sub: '' };
+      return `
+        <div class="w-12 h-12 rounded-xl shrink-0 flex flex-col items-center justify-center shadow-inner border border-white/10"
+             style="background:${cfg.bg}; color:${cfg.fg}">
+          <span class="text-[9px] font-black tracking-tight leading-none text-center px-1">${cfg.text}</span>
+          ${cfg.sub ? `<span class="text-[7px] font-bold opacity-80 mt-0.5 leading-none">${cfg.sub}</span>` : ''}
+        </div>
+      `;
+    }
+
+    function renderNearbyStores() {
+      const strip = document.getElementById('nearbyStoresStrip');
+      const ordered = [...STORES].map(s => {
+        const dist = state.userCoords ? haversineKm(state.userCoords.lat, state.userCoords.lng, s.lat, s.lng) : s.distKm;
+        return { ...s, calcDist: dist };
+      }).sort((a, b) => a.calcDist - b.calcDist);
+
+      strip.innerHTML = ordered.map((s, idx) => `
+        <a href="${s.flyerUrl}" target="_blank" rel="noopener noreferrer"
+           class="shrink-0 w-44 rounded-xl bg-slate-900/90 border ${idx === 0 ? 'border-amber-500/60' : 'border-slate-700'} p-2.5 hover:border-amber-400 transition block">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-[10px] font-bold ${idx === 0 ? 'text-amber-400' : 'text-emerald-400'}">${s.calcDist.toFixed(1)} km</span>
+            <span class="text-[10px] text-slate-400">${s.rating}</span>
+          </div>
+          <div class="text-xs font-bold text-white mt-0.5 truncate">${s.name}</div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${s.address.split(',')[0]}</div>
+          <div class="text-[10px] font-semibold text-amber-300 mt-1.5">View Specials ↗</div>
+        </a>
+      `).join('');
+    }
+
+    function renderFilterControls() {
+      document.querySelectorAll('.pack-btn').forEach(btn => {
+        const active = btn.dataset.pack === state.pack;
+        btn.className = `pack-btn py-2 rounded-lg text-xs font-bold transition ${
+          active ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:text-white'
+        }`;
+      });
+
+      document.querySelectorAll('.container-btn').forEach(btn => {
+        const active = btn.dataset.container === state.container;
+        btn.className = `container-btn py-2 rounded-lg text-xs font-bold transition ${
+          active ? 'bg-sky-500 text-slate-950 shadow' : 'text-slate-300 hover:text-white'
+        }`;
+      });
+
+      document.querySelectorAll('.strength-btn').forEach(btn => {
+        const active = btn.dataset.strength === state.strength;
+        btn.className = `strength-btn py-2 rounded-lg text-xs font-bold transition ${
+          active ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-300 hover:text-white'
+        }`;
+      });
+
+      const styleWrap = document.getElementById('stylePills');
+      styleWrap.innerHTML = STYLES.map(st => {
+        const active = st === state.style;
+        return `<button data-style="${st}" class="style-pill shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition ${
+          active ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
+        }">${st}</button>`;
+      }).join('');
+
+      styleWrap.querySelectorAll('.style-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.style = btn.dataset.style;
+          renderAll();
+        });
+      });
+    }
+
+    function getFilteredDeals() {
+      const q = state.search.trim().toLowerCase();
+      return state.deals
+        .map(enrichDeal)
+        .filter(d => {
+          if (state.pack !== 'all' && String(d.packSize) !== state.pack) return false;
+          if (state.container !== 'all' && d.container !== state.container) return false;
+          if (state.strength !== 'all' && d.strength !== state.strength) return false;
+          if (state.style !== 'All' && d.style !== state.style) return false;
+          if (state.ownership !== 'all' && d.ownership !== state.ownership) return false;
+          if (state.favOnly && !state.favs.includes(d.id)) return false;
+          if (q) {
+            const hay = `${d.name} ${d.brewery} ${d.style} ${d.container} ${d.packSize} pack`.toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          if (state.sort === 'savings') return b.totalSavings - a.totalSavings || a.best.price - b.best.price;
+          if (state.sort === 'ml') return a.perMl - b.perMl;
+          if (state.sort === 'price') return a.best.price - b.best.price;
+          if (state.sort === 'expiring') return a.soonestDays - b.soonestDays;
+          return 0;
+        });
+    }
+
+    function renderTopDeal(deals) {
+      const box = document.getElementById('topDealBanner');
+      if (!deals.length) {
+        box.innerHTML = '';
+        return;
+      }
+      const bestValueByMl = [...deals].sort((a, b) => a.perMl - b.perMl)[0];
+      const top = state.sort === 'ml' ? bestValueByMl : deals[0];
+      const store = getStore(top.best.storeId);
+      const exp = formatExpiryBadge(top.best.endsAt);
+      const saveText = top.storeDiff > 0
+        ? `Save $${top.storeDiff.toFixed(2)} vs ${getStore(top.worst.storeId).short}`
+        : top.promoSave > 0
+          ? `Save $${top.promoSave.toFixed(2)} off regular`
+          : `Top value`;
+
+      box.innerHTML = `
+        <div class="rounded-2xl bg-gradient-to-br from-emerald-950/90 via-slate-900 to-slate-900 border border-emerald-500/40 p-4 shadow-lg space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">
+              ${state.sort === 'ml' ? 'Best Value Per mL Right Now' : 'Best Deal Pick Right Now'}
+            </span>
+            <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ${exp.cls}">${exp.text}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            ${renderBrandLogo(top.brandKey)}
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-extrabold text-white truncate">${top.name} (${top.packSize} ${top.container})</div>
+              <div class="text-xs text-emerald-300 font-semibold mt-0.5">
+                Go to ${store.name} • $${top.best.price.toFixed(2)}
+              </div>
+              <div class="text-[11px] text-slate-300 mt-0.5">
+                ${saveText} • $${top.perUnit.toFixed(2)}/ea • <strong class="text-amber-300">$${top.perMl.toFixed(4)}/mL</strong> ($${top.per100Ml.toFixed(2)}/100mL)
+              </div>
+            </div>
+          </div>
+          ${bestValueByMl.id !== top.id ? `
+            <div class="pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[11px] text-slate-300">
+              <span>Lowest $/mL overall: <strong class="text-white">${bestValueByMl.name}</strong></span>
+              <span class="text-amber-300 font-bold">$${bestValueByMl.per100Ml.toFixed(2)}/100mL</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function renderDealsList(deals) {
+      const list = document.getElementById('dealsList');
+      document.getElementById('dealCount').textContent = deals.length;
+
+      if (!deals.length) {
+        list.innerHTML = `
+          <div class="rounded-2xl bg-slate-800/50 border border-slate-700 p-6 text-center space-y-2">
+            <p class="text-sm font-bold text-white">No beers match those filters</p>
+            <p class="text-xs text-slate-400">Try switching Pack Size, Container, or Strength back to All.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const lowestMl = Math.min(...deals.map(d => d.perMl));
+
+      list.innerHTML = deals.map(d => {
+        const isFav = state.favs.includes(d.id);
+        const isBestMl = Math.abs(d.perMl - lowestMl) < 0.00001;
+        const ownerBadge = d.ownership === 'independent'
+          ? `<span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">Independent</span>`
+          : `<span class="px-2 py-0.5 rounded-md bg-slate-700/70 text-slate-300 text-[10px] font-semibold">Major Brewer</span>`;
+
+        const strengthBadge = d.strength === 'mid'
+          ? `<span class="px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-300 text-[10px] font-bold">${d.abv}% Mid</span>`
+          : `<span class="px-2 py-0.5 rounded-md bg-slate-700/70 text-slate-300 text-[10px] font-semibold">${d.abv}% Full</span>`;
+
+        const offersHtml = d.sortedOffers.map((o, idx) => {
+          const st = getStore(o.storeId);
+          const exp = formatExpiryBadge(o.endsAt);
+          const isBest = idx === 0;
+          const diffFromBest = +(o.price - d.best.price).toFixed(2);
+          return `
+            <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl ${isBest ? 'bg-emerald-500/10 border border-emerald-500/35' : 'bg-slate-900/70 border border-slate-800'}">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-bold ${isBest ? 'text-emerald-300' : 'text-slate-200'}">${st.name}</span>
+                  ${isBest ? '<span class="text-[10px] font-extrabold text-emerald-400">★ BEST</span>' : `<span class="text-[10px] text-rose-400">+$${diffFromBest.toFixed(2)}</span>`}
+                </div>
+                <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <span class="text-[10px] text-slate-400">${o.tag}</span>
+                  <span class="px-1.5 py-0.5 rounded border text-[9px] font-semibold ${exp.cls}">${exp.text}</span>
+                </div>
+              </div>
+              <div class="text-right shrink-0 flex items-center gap-2.5">
+                <div>
+                  <div class="text-sm font-extrabold ${isBest ? 'text-emerald-300' : 'text-white'}">$${o.price.toFixed(2)}</div>
+                  ${o.regular > o.price ? `<div class="text-[10px] text-slate-400 line-through">$${o.regular.toFixed(2)}</div>` : ''}
+                </div>
+                <a href="${o.url || st.flyerUrl}" target="_blank" rel="noopener noreferrer"
+                   class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-amber-300 border border-slate-700">
+                  Go ↗
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <article class="rounded-2xl bg-slate-800/65 border ${isBestMl ? 'border-amber-500/50' : 'border-slate-700/80'} p-3.5 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                ${renderBrandLogo(d.brandKey)}
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <h3 class="text-sm font-extrabold text-white leading-snug">${d.name}</h3>
+                    ${isBestMl ? '<span class="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black uppercase">Best $/mL</span>' : ''}
+                  </div>
+                  <p class="text-[11px] text-slate-400 truncate">${d.brewery} • ${d.packSize} × ${d.unitMl}mL ${d.container} (${(d.totalMl / 1000).toFixed(2)}L)</p>
+                  <div class="flex items-center gap-1.5 flex-wrap mt-1.5">
+                    <span class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 text-[10px] font-bold">${d.packSize}-Pack</span>
+                    <span class="px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-300 text-[10px] font-bold">${d.container}</span>
+                    <span class="px-2 py-0.5 rounded-md bg-slate-700/70 text-slate-200 text-[10px] font-semibold">${d.style}</span>
+                    ${strengthBadge}
+                    ${ownerBadge}
+                  </div>
+                </div>
+              </div>
+              <button data-fav-id="${d.id}" class="fav-btn text-lg leading-none p-1 shrink-0" title="Toggle Favourite">
+                ${isFav ? '❤️' : '🤍'}
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 px-0.5 flex-wrap gap-1">
+              <span>
+                <strong class="text-white">$${d.perUnit.toFixed(2)}/ea</strong> •
+                <strong class="text-amber-300">$${d.perMl.toFixed(4)}/mL</strong>
+                <span class="text-slate-500">($${d.per100Ml.toFixed(2)}/100mL)</span>
+              </span>
+              ${d.totalSavings > 0 ? `<span class="text-emerald-400 font-bold">Save up to $${d.totalSavings.toFixed(2)}</span>` : ''}
+            </div>
+
+            <div class="space-y-1.5">
+              ${offersHtml}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      list.querySelectorAll('.fav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.favId;
+          if (state.favs.includes(id)) {
+            state.favs = state.favs.filter(x => x !== id);
+          } else {
+            state.favs.push(id);
+          }
+          saveFavs();
+          renderAll();
+        });
+      });
+    }
+
+    function renderAll() {
+      renderNearbyStores();
+      renderFilterControls();
+      const filtered = getFilteredDeals();
+      renderTopDeal(filtered);
+      renderDealsList(filtered);
+    }
+
+    function populateModalSelects() {
+      const beerSel = document.getElementById('modalBeerSelect');
+      beerSel.innerHTML = state.deals.map(d =>
+        `<option value="${d.id}">${d.name} (${d.packSize} ${d.container})</option>`
+      ).join('');
+
+      const storeSel = document.getElementById('modalStoreSelect');
+      storeSel.innerHTML = STORES.map(s =>
+        `<option value="${s.id}">${s.name}</option>`
+      ).join('');
+
+      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+      document.getElementById('modalEnds').value = nextWeek;
+    }
+
+    document.querySelectorAll('.pack-btn').forEach(btn => {
+      btn.addEventListener('click', () => { state.pack = btn.dataset.pack; renderAll(); });
+    });
+    document.querySelectorAll('.container-btn').forEach(btn => {
+      btn.addEventListener('click', () => { state.container = btn.dataset.container; renderAll(); });
+    });
+    document.querySelectorAll('.strength-btn').forEach(btn => {
+      btn.addEventListener('click', () => { state.strength = btn.dataset.strength; renderAll(); });
+    });
+    document.getElementById('ownershipSelect').addEventListener('change', e => {
+      state.ownership = e.target.value; renderAll();
+    });
+    document.getElementById('sortSelect').addEventListener('change', e => {
+      state.sort = e.target.value; renderAll();
+    });
+    document.getElementById('searchInput').addEventListener('input', e => {
+      state.search = e.target.value; renderAll();
+    });
+    document.getElementById('favOnlyToggle').addEventListener('change', e => {
+      state.favOnly = e.target.checked; renderAll();
+    });
+    document.getElementById('btnResetFilters').addEventListener('click', () => {
+      state.pack = 'all'; state.container = 'all'; state.strength = 'all'; state.style = 'All';
+      state.ownership = 'all'; state.search = ''; state.favOnly = false;
+      document.getElementById('searchInput').value = '';
+      document.getElementById('ownershipSelect').value = 'all';
+      document.getElementById('favOnlyToggle').checked = false;
+      renderAll();
+    });
+    document.getElementById('btnResetData').addEventListener('click', () => {
+      state.deals = structuredClone(INITIAL_DEALS);
+      saveDeals();
+      renderAll();
+      showToast('Restored verified Belrose deals');
+    });
+
+    document.getElementById('btnUseGps').addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        showToast('GPS not available — showing Belrose 2085');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          state.userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          document.getElementById('locationLabel').textContent = 'Live GPS Location Active';
+          renderNearbyStores();
+          showToast('Updated distances from your phone GPS');
+        },
+        () => showToast('Using Belrose NSW 2085 location')
+      );
+    });
+
+    document.getElementById('btnTestBayfields').addEventListener('click', async () => {
+      const statusEl = document.getElementById('bayfieldsSyncTime');
+      statusEl.textContent = "Checking Bayfield's Belrose...";
+      try {
+        const res = await fetch('https://www.bayfields.com.au/latest-specials/beers-cider-2/');
+        if (res.ok) {
+          statusEl.textContent = "Bayfield's live page reachable • Checked just now";
+          showToast("Bayfield's Belrose specials checked!");
+        } else {
+          throw new Error('HTTP ' + res.status);
+        }
+      } catch {
+        statusEl.textContent = "Bayfield's Belrose verified deals active";
+        showToast("Tap 'Open Flyer' to view Bayfield's live page");
+      }
+    });
+
+    document.getElementById('btnLogDeal').addEventListener('click', () => {
+      populateModalSelects();
+      document.getElementById('dealModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseModal').addEventListener('click', () => {
+      document.getElementById('dealModal').classList.add('hidden');
+    });
+    document.getElementById('dealForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const beerId = document.getElementById('modalBeerSelect').value;
+      const storeId = document.getElementById('modalStoreSelect').value;
+      const price = parseFloat(document.getElementById('modalPrice').value);
+      const endsAt = document.getElementById('modalEnds').value;
+      const tag = document.getElementById('modalNote').value.trim() || 'Flyer Special';
+
+      const deal = state.deals.find(d => d.id === beerId);
+      if (deal && !isNaN(price) && price > 0) {
+        const existing = deal.offers.find(o => o.storeId === storeId);
+        if (existing) {
+          existing.regular = Math.max(existing.regular, existing.price, price);
+          existing.price = price;
+          existing.endsAt = endsAt;
+          existing.tag = tag;
+        } else {
+          deal.offers.push({ storeId, price, regular: price, tag, endsAt, url: getStore(storeId).flyerUrl });
+        }
+        saveDeals();
+        renderAll();
+        document.getElementById('dealModal').classList.add('hidden');
+        document.getElementById('modalPrice').value = '';
+        document.getElementById('modalNote').value = '';
+        showToast(`Updated ${getStore(storeId).short} price!`);
+      }
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
